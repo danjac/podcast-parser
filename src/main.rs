@@ -10,13 +10,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let mut set = JoinSet::new();
 
     let urls = vec![
-        "https://pod.ink/1171270672.rss",
+        "https://pod.link/1171270672.rss",
         "http://feeds.feedburner.com/thememorypalace",
         "https://feeds.acast.com/public/shows/cfd8aed5-6d63-4b2f-b325-46e4b5665583",
     ];
 
     for url in urls {
         set.spawn(async move { 
+            println!("Fetching URL {}", url);
             reqwest::get(url).await?.bytes().await
         });
     }
