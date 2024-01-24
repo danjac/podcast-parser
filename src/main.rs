@@ -1,9 +1,8 @@
 use std::error::Error;
 use rss::Channel;
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
-    let response = reqwest::get("https://pod.link/1171270672.rss").await?.bytes().await?;
+async fn fetch_podcast(url: &str) -> Result<(), Box<dyn Error>> {
+    let response = reqwest::get(url).await?.bytes().await?;
 
     let channel = Channel::read_from(&response[..])?;
     println!("Title: {:?}", channel.title);
@@ -22,4 +21,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
 
     Ok(())
+
+}
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
+    fetch_podcast("https://pod.link/1171270672.rss").await
 }
