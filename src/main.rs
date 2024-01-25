@@ -31,7 +31,7 @@ async fn fetch_podcast(url: &str) -> Result<Channel, Box<dyn Error + Send + Sync
     println!("Fetching URL {}", url);
     let response = Client::new()
         .get(url)
-        .timeout(Duration::new(30, 0))
+        .timeout(Duration::new(60, 0))
         .send()
         .await?
         .bytes()
@@ -58,9 +58,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let mut i = 0;
 
     while let Some(result) = set.join_next().await {
-        i += 1;
         match result? {
             Ok(channel) => {
+                i += 1;
                 println!("Counter: {}/{}", i, count);
                 println!("Title: {:?}", channel.title);
                 println!("Episodes: {}", channel.items.len());
