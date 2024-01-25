@@ -63,6 +63,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 i += 1;
                 println!("Counter: {}/{}", i, count);
                 println!("Title: {:?}", channel.title);
+                println!("Pub Date: {:?}", channel.pub_date);
                 println!("Episodes: {}", channel.items.len());
             }
             Err(err) => println!("Error fetching feed: {}", err),
