@@ -38,7 +38,7 @@ async fn fetch_podcast(url: &str) -> Result<Channel, Box<dyn Error + Send + Sync
         .await?;
     match Channel::read_from(&response[..]) {
         Ok(channel) => Ok(channel),
-        Err(err) => Err(Box::new(ParseError(format!("Error parsing XML: {}", err)))),
+        Err(err) => Err(Box::new(ParseError(format!("Error parsing XML for URL {}: {}", url, err)))),
     }
 }
 
