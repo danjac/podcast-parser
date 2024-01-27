@@ -62,11 +62,11 @@ async fn fetch_podcast(url: String, client: Client) -> Result<Channel, Error> {
     }
 }
 
-fn parse_pub_date(channel: &Channel) -> Option<String> {
+fn parse_pub_date(channel: &Channel) -> Option<&str> {
     if let Some(pub_date) = &channel.pub_date {
-        Some(pub_date.clone())
+        Some(pub_date)
     } else if let Some(item) = channel.items.first() {
-        item.pub_date.clone()
+        item.pub_date.as_deref()
     } else {
         None
     }
