@@ -29,7 +29,7 @@ impl fmt::Display for ParseError {
 impl Error for ParseError {}
 
 async fn fetch_podcast(url: &str, client: Client) -> Result<Channel, Box<dyn Error + Send + Sync>> {
-    println!("Fetching URL {}", url);
+    println!("Fetching URL {url}");
     let response = client.get(url).send().await?.bytes().await?;
     match Channel::read_from(&response[..]) {
         Ok(channel) => Ok(channel),
@@ -51,6 +51,7 @@ fn parse_pub_date(channel: &Channel) -> Option<String> {
 async fn main() -> io::Result<()> {
     let mut set = JoinSet::new();
     let timeout = Duration::from_secs(30);
+
     let client = ClientBuilder::new()
         .timeout(timeout)
         .connect_timeout(timeout)
@@ -66,8 +67,8 @@ async fn main() -> io::Result<()> {
     let mut count = 0;
 
     for url in urls {
-        let url = url?;
         count += 1;
+        let url = url?;
         let client = client.clone();
         set.spawn(async move { fetch_podcast(&url, client).await });
     }
@@ -78,16 +79,16 @@ async fn main() -> io::Result<()> {
         match result? {
             Ok(channel) => {
                 i += 1;
-                println!("Counter: {}/{}", i, count);
+                println!("Counter: {i}/{count}");
                 println!("Title: {:?}", channel.title);
                 if let Some(pub_date) = parse_pub_date(&channel) {
-                    println!("Pub Date: {}", pub_date)
+                    println!("Pub Date: {pub_date}")
                 } else {
                     println!("No pub date found")
                 }
                 println!("Episodes: {}", channel.items.len());
             }
-            Err(err) => println!("Error fetching feed: {}", err),
+            Err(err) => println!("Error fetching feed: {err}"),
         }
     }
 
