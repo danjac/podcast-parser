@@ -1,13 +1,48 @@
 use reqwest::{Client, ClientBuilder};
 use rss::Channel;
-use std::error::Error;
 use std::fmt;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader, Lines};
 use std::path::Path;
 use std::process::exit;
 use std::time::Duration;
-use tokio::task::JoinSet;
+use tokio::task::{JoinError, JoinSet};
+
+enum Error {
+    Io(io::Error),
+    XmlParsing { url: String, err: rss::Error },
+    Http(reqwest::Error),
+    Task(JoinError),
+}
+
+impl From<io::Error> for Error {
+    fn from(e: io::Error) -> Self {
+        Self::Io(e)
+    }
+}
+
+impl From<reqwest::Error> for Error {
+    fn from(e: reqwest::Error) -> Self {
+        Self::Http(e)
+    }
+}
+
+impl From<JoinError> for Error {
+    fn from(e: JoinError) -> Self {
+        Self::Task(e)
+    }
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Error::Io(err) => write!(f, "IO error: {err}"),
+            Error::XmlParsing { url, err } => write!(f, "Error parsing XML for URL {url}: {err}"),
+            Error::Http(err) => write!(f, "HTTP error: {err}"),
+            Error::Task(err) => write!(f, "A task failed: {err}"),
+        }
+    }
+}
 
 fn read_lines<P>(filename: P) -> io::Result<Lines<BufReader<File>>>
 where
@@ -17,26 +52,13 @@ where
     Ok(BufReader::new(file).lines())
 }
 
-#[derive(Debug)]
-struct ParseError(String);
-
-impl fmt::Display for ParseError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "There is an error: {}", self.0)
-    }
-}
-
-impl Error for ParseError {}
-
-async fn fetch_podcast(url: &str, client: Client) -> Result<Channel, Box<dyn Error + Send + Sync>> {
+async fn fetch_podcast(url: String, client: Client) -> Result<Channel, Error> {
     println!("Fetching URL {}", url);
-    let response = client.get(url).send().await?.bytes().await?;
+    let response = client.get(&url).send().await?.bytes().await?;
 
     match Channel::read_from(&response[..]) {
         Ok(channel) => Ok(channel),
-        Err(err) => Err(Box::new(ParseError(format!(
-            "Error parsing XML for URL {url}: {err}"
-        )))),
+        Err(err) => Err(Error::XmlParsing { url, err }),
     }
 }
 
@@ -50,8 +72,7 @@ fn parse_pub_date(channel: &Channel) -> Option<String> {
     }
 }
 
-#[tokio::main]
-async fn main() -> io::Result<()> {
+async fn run() -> Result<(), Error> {
     let mut set = JoinSet::new();
     let client = ClientBuilder::new()
         .timeout(Duration::from_secs(5))
@@ -70,7 +91,7 @@ async fn main() -> io::Result<()> {
         let url = url?;
         count += 1;
         let client = client.clone();
-        set.spawn(async move { fetch_podcast(&url, client).await });
+        set.spawn(async move { fetch_podcast(url, client).await });
     }
 
     let mut i = 0;
@@ -93,4 +114,11 @@ async fn main() -> io::Result<()> {
     }
 
     Ok(())
+}
+
+#[tokio::main]
+async fn main() {
+    if let Err(e) = run().await {
+        eprintln!("{e}");
+    }
 }
