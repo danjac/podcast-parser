@@ -53,7 +53,7 @@ where
 }
 
 async fn fetch_podcast(url: String, client: Client) -> Result<Channel, Error> {
-    println!("Fetching URL {}", url);
+    println!("Fetching URL: {url}");
     let response = client.get(&url).send().await?.bytes().await?;
 
     Channel::read_from(&response[..]).map_err(|err| Error::XmlParsing { url, err })
@@ -102,7 +102,7 @@ async fn run() -> Result<(), Error> {
                 }
                 println!("Episodes: {}", channel.items.len());
             }
-            Err(err) => println!("Error fetching feed: {}", err),
+            Err(err) => eprintln!("Error fetching feed: {err}"),
         }
     }
 
