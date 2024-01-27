@@ -3,17 +3,17 @@ use rss::Channel;
 use std::error::Error;
 use std::fmt;
 use std::fs::File;
-use std::io::{self, BufRead};
+use std::io::{self, BufRead, BufReader, Lines};
 use std::path::Path;
 use std::time::Duration;
 use tokio::task::JoinSet;
 
-fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
+fn read_lines<P>(filename: P) -> io::Result<Lines<BufReader<File>>>
 where
     P: AsRef<Path>,
 {
     let file = File::open(filename)?;
-    Ok(io::BufReader::new(file).lines())
+    Ok(BufReader::new(file).lines())
 }
 
 #[derive(Debug)]
