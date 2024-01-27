@@ -38,7 +38,7 @@ impl fmt::Display for Error {
         match self {
             Error::Io(err) => write!(f, "IO error: {err}"),
             Error::XmlParsing { url, err } => write!(f, "Error parsing XML for URL {url}: {err}"),
-            Error::Http(err) => write!(f, "HTTP error: {err}"),
+            Error::Http(err) => write!(f, "HTTP client error: {err}"),
             Error::Task(err) => write!(f, "A task failed: {err}"),
         }
     }
@@ -74,11 +74,7 @@ async fn run() -> Result<(), Error> {
     let client = ClientBuilder::new()
         .timeout(Duration::from_secs(5))
         .connect_timeout(Duration::from_secs(5))
-        .build()
-        .unwrap_or_else(|e| {
-            eprintln!("Failed to build the HTTP client: {e}");
-            exit(1);
-        });
+        .build()?;
 
     let urls = read_lines("urls.txt")?;
 
@@ -117,5 +113,6 @@ async fn run() -> Result<(), Error> {
 async fn main() {
     if let Err(e) = run().await {
         eprintln!("{e}");
+        exit(1);
     }
 }
