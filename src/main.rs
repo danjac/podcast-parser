@@ -2,7 +2,7 @@ use reqwest::{Client, ClientBuilder};
 use rss::Channel;
 use std::fmt;
 use std::fs::File;
-use std::io::{self, BufRead, BufReader, Lines};
+use std::io::{self, stdout, BufRead, BufReader, Lines, Write};
 use std::path::Path;
 use std::process::exit;
 use std::time::Duration;
@@ -88,19 +88,26 @@ async fn run() -> Result<(), Error> {
     }
 
     let mut i = 0;
+    let stdout = stdout();
 
     while let Some(result) = set.join_next().await {
         match result? {
             Ok(channel) => {
                 i += 1;
-                println!("Counter: {}/{}", i, count);
-                println!("Title: {:?}", channel.title);
+
+                let mut stdout = stdout.lock();
+                stdout.write_fmt(format_args!("Title: {}\n", channel.title))?;
+
                 if let Some(pub_date) = parse_pub_date(&channel) {
-                    println!("Pub Date: {}", pub_date)
+                    stdout.write_fmt(format_args!("Pub Date: {pub_date}\n"))?;
                 } else {
-                    println!("No pub date found")
+                    stdout.write_all(b"No pub date found\n")?;
                 }
-                println!("Episodes: {}", channel.items.len());
+
+                stdout.write_fmt(format_args!("Episodes: {}\n\n", channel.items.len()))?;
+
+                stdout.write_fmt(format_args!("Counter: {i}/{count}\r"))?;
+                stdout.flush()?;
             }
             Err(err) => eprintln!("Error fetching feed: {err}"),
         }
