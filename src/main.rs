@@ -1,10 +1,11 @@
-use reqwest::Client;
+use reqwest::{Client, ClientBuilder};
 use rss::Channel;
 use std::error::Error;
 use std::fmt;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader, Lines};
 use std::path::Path;
+use std::process::exit;
 use std::time::Duration;
 use tokio::task::JoinSet;
 
@@ -27,15 +28,10 @@ impl fmt::Display for ParseError {
 
 impl Error for ParseError {}
 
-async fn fetch_podcast(url: &str) -> Result<Channel, Box<dyn Error + Send + Sync>> {
+async fn fetch_podcast(url: &str, client: Client) -> Result<Channel, Box<dyn Error + Send + Sync>> {
     println!("Fetching URL {}", url);
-    let response = Client::new()
-        .get(url)
-        .timeout(Duration::new(60, 0))
-        .send()
-        .await?
-        .bytes()
-        .await?;
+    let response = client.get(url).send().await?.bytes().await?;
+
     match Channel::read_from(&response[..]) {
         Ok(channel) => Ok(channel),
         Err(err) => Err(Box::new(ParseError(format!(
@@ -57,6 +53,14 @@ fn parse_pub_date(channel: &Channel) -> Option<String> {
 #[tokio::main]
 async fn main() -> io::Result<()> {
     let mut set = JoinSet::new();
+    let client = ClientBuilder::new()
+        .timeout(Duration::from_secs(5))
+        .connect_timeout(Duration::from_secs(5))
+        .build()
+        .unwrap_or_else(|e| {
+            eprintln!("Failed to build the HTTP client: {e}");
+            exit(1);
+        });
 
     let urls = read_lines("urls.txt")?;
 
@@ -65,7 +69,8 @@ async fn main() -> io::Result<()> {
     for url in urls {
         let url = url?;
         count += 1;
-        set.spawn(async move { fetch_podcast(&url).await });
+        let client = client.clone();
+        set.spawn(async move { fetch_podcast(&url, client).await });
     }
 
     let mut i = 0;
