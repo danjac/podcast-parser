@@ -55,14 +55,15 @@ fn parse_pub_date(channel: &Channel) -> Option<String> {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> io::Result<()> {
     let mut set = JoinSet::new();
 
     let urls = read_lines("urls.txt")?;
 
     let mut count = 0;
 
-    for url in urls.flatten() {
+    for url in urls {
+        let url = url?;
         count += 1;
         set.spawn(async move { fetch_podcast(&url).await });
     }
