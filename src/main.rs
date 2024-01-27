@@ -56,10 +56,7 @@ async fn fetch_podcast(url: String, client: Client) -> Result<Channel, Error> {
     println!("Fetching URL {}", url);
     let response = client.get(&url).send().await?.bytes().await?;
 
-    match Channel::read_from(&response[..]) {
-        Ok(channel) => Ok(channel),
-        Err(err) => Err(Error::XmlParsing { url, err }),
-    }
+    Channel::read_from(&response[..]).map_err(|err| Error::XmlParsing { url, err })
 }
 
 fn parse_pub_date(channel: &Channel) -> Option<&str> {
