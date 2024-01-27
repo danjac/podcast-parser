@@ -1,19 +1,20 @@
-use reqwest::Client;
+use reqwest::{Client, ClientBuilder};
 use rss::Channel;
 use std::error::Error;
 use std::fmt;
 use std::fs::File;
-use std::io::{self, BufRead};
+use std::io::{self, BufRead, BufReader, Lines};
 use std::path::Path;
+use std::process::exit;
 use std::time::Duration;
 use tokio::task::JoinSet;
 
-fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
+fn read_lines<P>(filename: P) -> io::Result<Lines<BufReader<File>>>
 where
     P: AsRef<Path>,
 {
     let file = File::open(filename)?;
-    Ok(io::BufReader::new(file).lines())
+    Ok(BufReader::new(file).lines())
 }
 
 #[derive(Debug)]
@@ -27,18 +28,12 @@ impl fmt::Display for ParseError {
 
 impl Error for ParseError {}
 
-async fn fetch_podcast(url: &str) -> Result<Channel, Box<dyn Error + Send + Sync>> {
+async fn fetch_podcast(url: &str, client: Client) -> Result<Channel, Box<dyn Error + Send + Sync>> {
     println!("Fetching URL {}", url);
-    let response = Client::new()
-        .get(url)
-        .timeout(Duration::new(60, 0))
-        .send()
-        .await?
-        .bytes()
-        .await?;
+    let response = client.get(url).send().await?.bytes().await?;
     match Channel::read_from(&response[..]) {
         Ok(channel) => Ok(channel),
-        Err(err) => Err(Box::new(ParseError(format!("Error parsing XML for URL {}: {}", url, err)))),
+        Err(err) => Err(Box::new(ParseError(format!("Error parsing XML for URL {url}: {err}")))),
     }
 }
 
@@ -53,16 +48,28 @@ fn parse_pub_date(channel: &Channel) -> Option<String> {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> io::Result<()> {
     let mut set = JoinSet::new();
+    let timeout = Duration::from_secs(30);
+    let client = ClientBuilder::new()
+        .timeout(timeout)
+        .connect_timeout(timeout)
+        .build()
+        .unwrap_or_else(|e| {
+            eprintln!("Failed to build HTTP client: {e}");
+            exit(1);
+        }
+    );
 
     let urls = read_lines("urls.txt")?;
 
     let mut count = 0;
 
-    for url in urls.flatten() {
+    for url in urls {
+        let url = url?;
         count += 1;
-        set.spawn(async move { fetch_podcast(&url).await });
+        let client = client.clone();
+        set.spawn(async move { fetch_podcast(&url, client).await });
     }
 
     let mut i = 0;
