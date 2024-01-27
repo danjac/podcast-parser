@@ -36,10 +36,10 @@ impl From<JoinError> for Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Error::Io(err) => write!(f, "IO error: {err}"),
-            Error::XmlParsing { url, err } => write!(f, "Error parsing XML for URL {url}: {err}"),
-            Error::Http(err) => write!(f, "HTTP client error: {err}"),
-            Error::Task(err) => write!(f, "A task failed: {err}"),
+            Self::Io(err) => write!(f, "IO error: {err}"),
+            Self::XmlParsing { url, err } => write!(f, "Error parsing XML for URL {url}: {err}"),
+            Self::Http(err) => write!(f, "HTTP client error: {err}"),
+            Self::Task(err) => write!(f, "A task failed: {err}"),
         }
     }
 }
