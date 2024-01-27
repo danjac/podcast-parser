@@ -72,8 +72,7 @@ fn parse_pub_date(channel: &Channel) -> Option<&str> {
 async fn run() -> Result<(), Error> {
     let mut set = JoinSet::new();
     let client = ClientBuilder::new()
-        .timeout(Duration::from_secs(5))
-        .connect_timeout(Duration::from_secs(5))
+        .timeout(Duration::from_secs(60))
         .build()?;
 
     let urls = read_lines("urls.txt")?;
