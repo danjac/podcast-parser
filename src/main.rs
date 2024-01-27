@@ -42,6 +42,16 @@ async fn fetch_podcast(url: &str) -> Result<Channel, Box<dyn Error + Send + Sync
     }
 }
 
+fn parse_pub_date(channel: &Channel) -> Option<String> {
+    if let Some(pub_date) = &channel.pub_date {
+        Some(pub_date.clone())
+    } else if let Some(item) = channel.items.first() {
+        item.pub_date.clone()
+    } else {
+        None
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let mut set = JoinSet::new();
@@ -63,7 +73,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 i += 1;
                 println!("Counter: {}/{}", i, count);
                 println!("Title: {:?}", channel.title);
-                println!("Pub Date: {:?}", channel.pub_date);
+                if let Some(pub_date) = parse_pub_date(&channel) {
+                    println!("Pub Date: {}", pub_date)
+                } else {
+                    println!("No pub date found")
+                }
                 println!("Episodes: {}", channel.items.len());
             }
             Err(err) => println!("Error fetching feed: {}", err),
