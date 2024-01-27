@@ -33,7 +33,9 @@ async fn fetch_podcast(url: &str, client: Client) -> Result<Channel, Box<dyn Err
     let response = client.get(url).send().await?.bytes().await?;
     match Channel::read_from(&response[..]) {
         Ok(channel) => Ok(channel),
-        Err(err) => Err(Box::new(ParseError(format!("Error parsing XML for URL {url}: {err}")))),
+        Err(err) => Err(Box::new(ParseError(format!(
+            "Error parsing XML for URL {url}: {err}"
+        )))),
     }
 }
 
@@ -59,8 +61,7 @@ async fn main() -> io::Result<()> {
         .unwrap_or_else(|e| {
             eprintln!("Failed to build HTTP client: {e}");
             exit(1);
-        }
-    );
+        });
 
     let urls = read_lines("urls.txt")?;
 
