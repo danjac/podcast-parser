@@ -1,5 +1,5 @@
-use reqwest::{Client, ClientBuilder};
 use anyhow::Result;
+use reqwest::{Client, ClientBuilder};
 use rss::Channel;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader, Lines};
