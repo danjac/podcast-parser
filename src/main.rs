@@ -36,7 +36,7 @@ fn parse_pub_date(channel: &Channel) -> Option<String> {
 #[tokio::main]
 async fn main() -> Result<()> {
     let mut set = JoinSet::new();
-    let timeout = Duration::from_secs(30);
+    let timeout = Duration::from_secs(60);
 
     let client = ClientBuilder::new()
         .timeout(timeout)
