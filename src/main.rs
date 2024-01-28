@@ -38,7 +38,7 @@ async fn main() -> Result<()> {
     let mut set = JoinSet::new();
 
     let client = ClientBuilder::new()
-        .timeout(Duration::from_secs(30))
+        .timeout(Duration::from_secs(60))
         .connect_timeout(Duration::from_secs(10))
         .build()
         .unwrap_or_else(|e| {
