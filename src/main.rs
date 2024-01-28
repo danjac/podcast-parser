@@ -36,11 +36,10 @@ fn parse_pub_date(channel: &Channel) -> Option<String> {
 #[tokio::main]
 async fn main() -> Result<()> {
     let mut set = JoinSet::new();
-    let timeout = Duration::from_secs(60);
 
     let client = ClientBuilder::new()
-        .timeout(timeout)
-        .connect_timeout(timeout)
+        .timeout(Duration::from_secs(30))
+        .connect_timeout(Duration::from_secs(10))
         .build()
         .unwrap_or_else(|e| {
             eprintln!("Failed to build HTTP client: {e}");
