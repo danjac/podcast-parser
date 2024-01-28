@@ -1,7 +1,6 @@
 use reqwest::{Client, ClientBuilder};
+use anyhow::Result;
 use rss::Channel;
-use std::error::Error;
-use std::fmt;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader, Lines};
 use std::path::Path;
@@ -17,26 +16,11 @@ where
     Ok(BufReader::new(file).lines())
 }
 
-#[derive(Debug)]
-struct ParseError(String);
-
-impl fmt::Display for ParseError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "There is an error: {}", self.0)
-    }
-}
-
-impl Error for ParseError {}
-
-async fn fetch_podcast(url: &str, client: Client) -> Result<Channel, Box<dyn Error + Send + Sync>> {
+async fn fetch_podcast(url: &str, client: Client) -> Result<Channel> {
     println!("Fetching URL {url}");
     let response = client.get(url).send().await?.bytes().await?;
-    match Channel::read_from(&response[..]) {
-        Ok(channel) => Ok(channel),
-        Err(err) => Err(Box::new(ParseError(format!(
-            "Error parsing XML for URL {url}: {err}"
-        )))),
-    }
+    let channel = Channel::read_from(&response[..])?;
+    Ok(channel)
 }
 
 fn parse_pub_date(channel: &Channel) -> Option<String> {
@@ -50,7 +34,7 @@ fn parse_pub_date(channel: &Channel) -> Option<String> {
 }
 
 #[tokio::main]
-async fn main() -> io::Result<()> {
+async fn main() -> Result<()> {
     let mut set = JoinSet::new();
     let timeout = Duration::from_secs(30);
 
